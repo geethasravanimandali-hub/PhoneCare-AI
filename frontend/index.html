@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PhoneCare AI – Smart Android Troubleshooting Agent</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="logo-badge">
+        <span class="icon">📱</span>
+        <div>
+          <h1>PhoneCare AI</h1>
+          <p class="subtitle">Smart Android Troubleshooting Agent</p>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="app-main">
+      <!-- PAGE 1: DIAGNOSIS FORM -->
+      <section id="diagnosis-view" class="card fade-in">
+        <div class="card-header">
+          <h2>Start Device Diagnosis</h2>
+          <p>Select your Android device details and describe the issue you are experiencing.</p>
+        </div>
+
+        <form id="diagnosis-form">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="brand-select">Phone Brand</label>
+              <select id="brand-select" required>
+                <option value="" disabled selected>Select phone brand...</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="model-select">Phone Model</label>
+              <select id="model-select" required disabled>
+                <option value="" disabled selected>Select brand first...</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="category-select">Problem Category</label>
+            <select id="category-select" required>
+              <option value="" disabled selected>Select problem category...</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="description-input">Describe Your Problem</label>
+            <textarea id="description-input" rows="4" placeholder="E.g., Battery drains from 100% to 20% in 2 hours even while not using the phone..." required></textarea>
+          </div>
+
+          <div id="form-error" class="alert alert-error hidden"></div>
+
+          <button type="submit" id="diagnose-btn" class="btn btn-primary">
+            <span class="btn-text">Diagnose Issue</span>
+            <span class="spinner hidden"></span>
+          </button>
+        </form>
+      </section>
+
+      <!-- PAGE 2: INTERACTIVE TROUBLESHOOTING -->
+      <section id="troubleshooting-view" class="card hidden">
+        <!-- Device Info Banner -->
+        <div class="device-summary-bar">
+          <div class="summary-pill"><strong id="summary-brand">Samsung</strong></div>
+          <div class="summary-pill"><span id="summary-model">Galaxy S24</span></div>
+          <div class="summary-pill category-pill"><span id="summary-category">Battery draining</span></div>
+        </div>
+
+        <div class="user-problem-quote">
+          <p class="quote-label">Reported Issue:</p>
+          <p id="summary-description" class="quote-text"></p>
+        </div>
+
+        <!-- Troubleshooting Step Card -->
+        <div id="step-container" class="step-card">
+          <div class="step-meta">
+            <span id="step-badge" class="badge">Step 1</span>
+            <span id="step-status" class="status-indicator">In Progress</span>
+          </div>
+
+          <h3 id="step-title" class="step-title">Inspecting Background App Power Consumers</h3>
+
+          <div class="instruction-box">
+            <h4>Troubleshooting Action</h4>
+            <p id="step-instruction"></p>
+          </div>
+
+          <div class="explanation-box">
+            <h4>Technical Rationale</h4>
+            <p id="step-explanation"></p>
+          </div>
+
+          <!-- Interaction Actions -->
+          <div id="action-buttons" class="step-actions">
+            <button id="btn-solved" class="btn btn-success">
+              ✓ YES, Problem Solved
+            </button>
+            <button id="btn-not-solved" class="btn btn-secondary">
+              ✕ NO, Problem Not Solved
+            </button>
+          </div>
+        </div>
+
+        <!-- Final Recommendation / Escalation Card (Hidden Initially) -->
+        <div id="final-card" class="final-card hidden">
+          <div id="final-icon" class="final-icon">🎉</div>
+          <h3 id="final-title">Troubleshooting Complete</h3>
+          <p id="final-message" class="final-message"></p>
+          <button id="btn-restart" class="btn btn-primary">Start New Diagnosis</button>
+        </div>
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      <p>PhoneCare AI &bull; Application Development, Deployment & Architecture</p>
+    </footer>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
