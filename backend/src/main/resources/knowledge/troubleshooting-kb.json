@@ -1,0 +1,326 @@
+{
+  "version": "1.0",
+  "name": "Android Troubleshooting Knowledge Base",
+  "categories": [
+    {
+      "id": "battery_draining",
+      "name": "Battery draining",
+      "symptoms": [
+        "Rapid battery depletion during standby",
+        "Phone drains quickly after update",
+        "Sudden drop in percentage"
+      ],
+      "brandSpecificPaths": {
+        "Samsung": "Settings → Battery → Background usage limits → Put unused apps to sleep",
+        "Google Pixel": "Settings → Battery → Battery Saver & Adaptive Battery",
+        "OnePlus": "Settings → Battery → More settings → App battery management",
+        "Xiaomi": "Settings → Battery & performance → App battery saver",
+        "Motorola": "Settings → Battery → Adaptive Battery & Background restrictions"
+      },
+      "safeSteps": [
+        {
+          "step": 1,
+          "title": "Analyze and Limit Background App Drain",
+          "action": "Inspect Battery Usage in device settings. Identify apps consuming over 5% on standby and restrict their background execution.",
+          "rationale": "Unoptimized third-party background wake-locks are the primary cause of sudden standby discharge."
+        },
+        {
+          "step": 2,
+          "title": "Adjust Display Refresh Rate and Always-On Display",
+          "action": "Switch screen refresh rate from dynamic 120Hz to Standard 60Hz and disable Always-On Display (AOD) for 24 hours.",
+          "rationale": "High refresh rate panels and ambient displays continuously consume 15-25% more GPU power."
+        },
+        {
+          "step": 3,
+          "title": "Clear Google Play Services Cache and Restart",
+          "action": "Go to Settings → Apps → Google Play Services → Storage → Clear Cache. Then perform a full device reboot.",
+          "rationale": "Google Play Services sync loops can lock background CPU states, causing severe battery drain."
+        }
+      ],
+      "safetyEscalation": {
+        "triggers": ["swollen battery", "bulging back panel", "burning odor", "battery overheating beyond 50C"],
+        "advice": "WARNING: Physical battery swelling or burning odor indicates a serious chemical hazard. Stop using the device immediately, do not charge it, and take it to an authorized brand repair center."
+      }
+    },
+    {
+      "id": "phone_overheating",
+      "name": "Phone overheating",
+      "symptoms": [
+        "Device becomes hot to touch during basic tasks",
+        "Camera app closes due to temperature warning",
+        "Thermal throttling causing stuttering"
+      ],
+      "brandSpecificPaths": {
+        "Samsung": "Settings → Device Care → Optimization & Performance profile → Light mode",
+        "Google Pixel": "Settings → System → System updates & Settings → Battery → Battery Share (turn off)",
+        "OnePlus": "Settings → Battery → High performance mode (disable)",
+        "Xiaomi": "Settings → Battery → Battery protection & Clear background cache when locked",
+        "Motorola": "Settings → System → Performance → RAM boost"
+      },
+      "safeSteps": [
+        {
+          "step": 1,
+          "title": "Isolate Heavy Background Tasks and Remove Insulating Cases",
+          "action": "Remove thick rubber/leather protective cases and close resource-intensive games or camera applications.",
+          "rationale": "Thick cases trap heat against the phone frame, preventing passive aluminum/glass dissipation."
+        },
+        {
+          "step": 2,
+          "title": "Enable Light Performance Mode & Disable 5G Search",
+          "action": "Navigate to Performance/Battery settings and switch from Maximum to Standard or Light performance profile. Turn off 5G if signal is weak.",
+          "rationale": "Continuous searching for weak 5G signals drives the RF modem at maximum power, generating excessive heat."
+        },
+        {
+          "step": 3,
+          "title": "Boot in Safe Mode to Rule Out Malicious Background Apps",
+          "action": "Press and hold Power Off on the power menu until 'Safe Mode' appears. Tap to restart into Safe Mode and test temperature for 2 hours.",
+          "rationale": "Safe Mode disables all third-party apps, confirming whether overheating is caused by third-party malware/bugs."
+        }
+      ],
+      "safetyEscalation": {
+        "triggers": ["swelling", "smoke", "excessive heat while charging", "screen lifting"],
+        "advice": "Unplug the phone immediately. Place it on a non-flammable surface and bring it to an authorized technician."
+      }
+    },
+    {
+      "id": "wifi_problems",
+      "name": "Wi-Fi problems",
+      "symptoms": [
+        "Wi-Fi connects but shows 'No Internet'",
+        "Frequent random Wi-Fi disconnections",
+        "Wi-Fi toggle switch greyed out"
+      ],
+      "brandSpecificPaths": {
+        "Samsung": "Settings → General management → Reset → Reset Wi-Fi and Bluetooth settings",
+        "Google Pixel": "Settings → System → Reset options → Reset Wi-Fi, mobile & Bluetooth",
+        "OnePlus": "Settings → System settings → Back up and reset → Reset phone → Reset network settings",
+        "Xiaomi": "Settings → Connection & sharing → Reset Wi-Fi, mobile networks and Bluetooth",
+        "Motorola": "Settings → System → Reset options → Reset Wi-Fi, mobile & Bluetooth"
+      },
+      "safeSteps": [
+        {
+          "step": 1,
+          "title": "Forget Network and Toggle Airplane Mode",
+          "action": "Go to Settings → Wi-Fi, tap the gear icon next to your network, tap Forget. Turn Airplane mode ON for 10 seconds, turn OFF, and reconnect.",
+          "rationale": "Forces the network stack to renew DHCP leases and clear stale DNS cache."
+        },
+        {
+          "step": 2,
+          "title": "Disable MAC Randomization and Private DNS",
+          "action": "In Wi-Fi network settings, change 'MAC Address Type' from Randomized to Phone MAC. Go to Settings → Connections → Private DNS and select Automatic.",
+          "rationale": "Some home and university routers reject frequently cycling randomized MAC addresses or custom DNS resolvers."
+        },
+        {
+          "step": 3,
+          "title": "Reset Network Settings",
+          "action": "Navigate to System/General Management → Reset → Reset Network Settings. (Note: Saved Wi-Fi passwords will be cleared).",
+          "rationale": "Clears corrupted network configuration files without erasing any personal photos or app data."
+        }
+      ],
+      "safetyEscalation": {
+        "triggers": ["wi-fi toggle completely greyed out after network reset and factory reboot", "hardware chip failure"],
+        "advice": "A permanently greyed-out Wi-Fi toggle after network reset indicates a failing Wi-Fi/Bluetooth IC chip. Visit an authorized repair center."
+      }
+    },
+    {
+      "id": "mobile_network_problems",
+      "name": "Mobile network problems",
+      "symptoms": [
+        "No Service or Emergency Calls Only",
+        "Calls drop constantly",
+        "Mobile data not functioning"
+      ],
+      "brandSpecificPaths": {
+        "Samsung": "Settings → Connections → Mobile networks → Network mode (LTE/3G/2G auto)",
+        "Google Pixel": "Settings → Network & internet → SIMs → Preferred network type",
+        "OnePlus": "Settings → Mobile network → Select SIM → Preferred network type",
+        "Xiaomi": "Settings → SIM cards & mobile networks → Select SIM → Preferred network type",
+        "Motorola": "Settings → Network & internet → Mobile network → Preferred network type"
+      },
+      "safeSteps": [
+        {
+          "step": 1,
+          "title": "Toggle Airplane Mode & Re-seat Physical SIM / Toggle eSIM",
+          "action": "Turn Airplane Mode ON for 15 seconds then OFF. If using a physical SIM card, gently eject, inspect for dust, and re-insert.",
+          "rationale": "Re-initiates the baseband handshake with nearest telecom cellular towers."
+        },
+        {
+          "step": 2,
+          "title": "Switch Preferred Network Type to LTE / 4G",
+          "action": "Go to Settings → Mobile Networks → Preferred network type and choose LTE/4G Auto instead of 5G Auto.",
+          "rationale": "In areas with sparse 5G coverage, continuous 5G/LTE handoff can drop calls and freeze mobile data."
+        },
+        {
+          "step": 3,
+          "title": "Reset Access Point Names (APN) to Default",
+          "action": "Go to Mobile Networks → Access Point Names (APN) → Tap three dots in upper corner → Reset to default.",
+          "rationale": "Restores original carrier cellular data and MMS gateway configurations."
+        }
+      ],
+      "safetyEscalation": {
+        "triggers": ["physical sim tray damage", "water immersion", "baseband null in About Phone"],
+        "advice": "If the IMEI or Baseband version shows 'Unknown' in About Phone, the cellular modem module is damaged. Contact authorized brand service."
+      }
+    },
+    {
+      "id": "charging_problems",
+      "name": "Charging problems",
+      "symptoms": [
+        "Phone charges very slowly",
+        "Charging connects and disconnects repeatedly",
+        "Moisture detected warning won't disappear"
+      ],
+      "brandSpecificPaths": {
+        "Samsung": "Settings → Battery → Charging settings → Fast charging toggle",
+        "Google Pixel": "Settings → Battery → Adaptive Charging",
+        "OnePlus": "Settings → Battery → Wise Charging / SuperVOOC toggle",
+        "Xiaomi": "Settings → Battery → Boost charging speed",
+        "Motorola": "Settings → Battery → Optimized charging"
+      },
+      "safeSteps": [
+        {
+          "step": 1,
+          "title": "Inspect and Clean the USB-C Port Gently",
+          "action": "Use a wooden or plastic toothpick under good lighting to gently clear pocket lint from the USB-C port. Never use metal pins.",
+          "rationale": "Compressed pocket lint prevents the charging cable pins from making full physical contact with the charging port."
+        },
+        {
+          "step": 2,
+          "title": "Test with an Alternative Official Cable & Power Brick",
+          "action": "Test charging using a known working certified original cable and wall adapter plugged into a different wall socket.",
+          "rationale": "Over 70% of intermittent charging issues stem from internal wire fractures in worn charging cables."
+        },
+        {
+          "step": 3,
+          "title": "Clear USB Settings System App Cache",
+          "action": "Go to Settings → Apps → Enable 'Show system apps' → Select USBSettings → Storage → Clear Data / Cache. Restart device.",
+          "rationale": "Clears false-positive 'Moisture Detected' alerts after the port has already dried thoroughly."
+        }
+      ],
+      "safetyEscalation": {
+        "triggers": ["burning smell from port", "charred charging pins", "sparks", "melted plastic"],
+        "advice": "DANGER: Do not attempt to charge a phone with charred or smoking port pins. Disconnect immediately and take to an authorized technician."
+      }
+    },
+    {
+      "id": "camera_problems",
+      "name": "Camera problems",
+      "symptoms": [
+        "Camera app crashes on launch (Camera Error)",
+        "Photos blurry or unable to focus",
+        "Black screen when opening camera"
+      ],
+      "brandSpecificPaths": {
+        "Samsung": "Settings → Apps → Camera → Storage → Clear cache & Clear data",
+        "Google Pixel": "Settings → Apps → Pixel Camera → Storage & cache → Clear storage",
+        "OnePlus": "Settings → Apps → App management → Camera → Storage usage → Clear data",
+        "Xiaomi": "Settings → Apps → Manage apps → Camera → Clear data",
+        "Motorola": "Settings → Apps → Camera → Storage & cache → Clear storage"
+      },
+      "safeSteps": [
+        {
+          "step": 1,
+          "title": "Force Stop and Clear Camera App Data",
+          "action": "Navigate to Settings → Apps → Camera. Tap 'Force Stop', then go to Storage and tap 'Clear Data'. (Photos in gallery are safe and not deleted).",
+          "rationale": "Clears corrupted camera preferences, lens profiles, and temporary HDR image buffers."
+        },
+        {
+          "step": 2,
+          "title": "Clean Lens Surface & Revoke Third-Party Camera Permissions",
+          "action": "Clean camera lens with a microfiber cloth. Go to Settings → Privacy → Permission manager → Camera, and revoke camera access from untrusted apps.",
+          "rationale": "Background apps locking the camera hardware interface can prevent the main camera app from accessing the sensor."
+        },
+        {
+          "step": 3,
+          "title": "Test Camera in Safe Mode",
+          "action": "Restart into Safe Mode to determine whether third-party social media camera filters are causing system sensor driver crashes.",
+          "rationale": "Isolates operating system camera drivers from conflicting third-party video apps."
+        }
+      ],
+      "safetyEscalation": {
+        "triggers": ["cracked camera lens glass", "rattling sound without OIS engagement", "internal laser autofocus sensor damage"],
+        "advice": "Cracked lenses or physically broken optical image stabilization (OIS) motors require sensor module replacement at an authorized service center."
+      }
+    },
+    {
+      "id": "storage_problems",
+      "name": "Storage problems",
+      "symptoms": [
+        "Storage space running out warning",
+        "Apps cannot download or update",
+        "System sluggish due to low free memory"
+      ],
+      "brandSpecificPaths": {
+        "Samsung": "Settings → Device care → Storage → Recycle bin & Duplicate files",
+        "Google Pixel": "Settings → Storage → Free up space (Files by Google)",
+        "OnePlus": "Settings → About device → Storage → Clean",
+        "Xiaomi": "Settings → About phone → Storage → Deep clean",
+        "Motorola": "Settings → Storage → Free up space"
+      },
+      "safeSteps": [
+        {
+          "step": 1,
+          "title": "Clear App Caches and Empty System Recycle Bins",
+          "action": "Open Device Care / Storage. Check Gallery Trash/Recycle Bin and Files Trash and tap 'Empty'.",
+          "rationale": "Deleted photos and videos remain in the trash bin for 30 days by default, consuming gigabytes of active storage."
+        },
+        {
+          "step": 2,
+          "title": "Clear Messaging App Media and Large Downloads",
+          "action": "Open messaging apps (WhatsApp, Telegram) → Settings → Storage and data → Manage storage. Delete forwarded video archives.",
+          "rationale": "Chat apps accumulate heavy video databases that do not automatically appear in standard photo galleries."
+        },
+        {
+          "step": 3,
+          "title": "Uninstall Unused Heavy Apps & Offload to Cloud",
+          "action": "Review apps larger than 1GB that have not been opened in 30 days and uninstall them. Backup photos to Google Photos/OneDrive.",
+          "rationale": "Android requires at least 10-15% free internal storage for virtual RAM paging and database indexing."
+        }
+      ],
+      "safetyEscalation": {
+        "triggers": ["corrupted internal UFS flash memory", "read-only filesystem errors"],
+        "advice": "If storage fails to format or displays I/O read-only errors, the internal flash storage chip is degrading. Backup data and contact service."
+      }
+    },
+    {
+      "id": "phone_lagging",
+      "name": "Phone lagging",
+      "symptoms": [
+        "UI stutters when scrolling or opening apps",
+        "Apps take multiple seconds to launch",
+        "Touch input delayed or unresponsive"
+      ],
+      "brandSpecificPaths": {
+        "Samsung": "Settings → Device care → Auto optimization → Auto restart",
+        "Google Pixel": "Settings → System → Developer options → Window animation scale",
+        "OnePlus": "Settings → System settings → RAM Expansion",
+        "Xiaomi": "Settings → Additional settings → Memory extension",
+        "Motorola": "Settings → System → Performance → RAM boost"
+      },
+      "safeSteps": [
+        {
+          "step": 1,
+          "title": "Reboot Device & Close Inactive Background Apps",
+          "action": "Perform a complete device restart. Check recent apps screen and close heavy tasks.",
+          "rationale": "Rebooting clears volatile RAM, terminates zombie system processes, and flushes kernel buffer memory."
+        },
+        {
+          "step": 2,
+          "title": "Adjust Window Animation Scales to 0.5x",
+          "action": "Enable Developer Options (tap Build Number 7 times). In Developer Options, change Window, Transition, and Animator scales from 1.0x to 0.5x.",
+          "rationale": "Halves the visual rendering duration for window transitions, making the user interface respond twice as quickly."
+        },
+        {
+          "step": 3,
+          "title": "Wipe System Cache Partition from Android Recovery",
+          "action": "Power off. Hold Power + Volume Up until the recovery screen appears. Use volume keys to select 'Wipe Cache Partition' and confirm.",
+          "rationale": "Clears obsolete compiled Dalvik/ART runtime cache files left behind by OS updates without deleting user data."
+        }
+      ],
+      "safetyEscalation": {
+        "triggers": ["frequent random kernel panics", "reboot loops", "severe hardware degradation"],
+        "advice": "Continuous bootloops or kernel panics after factory reset indicate motherboard or processor failure. Visit an authorized brand service center."
+      }
+    }
+  ]
+}
