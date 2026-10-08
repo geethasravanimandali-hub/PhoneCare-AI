@@ -1,0 +1,35 @@
+# Git & Version Control
+.git/
+.gitignore
+
+# Local build artifacts
+target/
+backend/target/
+*.class
+*.jar
+
+# Operating system files
+.DS_Store
+._*
+.Trashes
+
+# IDE / Editor configuration
+.idea/
+*.iml
+.vscode/
+.settings/
+.classpath
+.project
+
+# Secrets and local configurations
+.env
+.env.*
+application-local.properties
+*secret*
+*key*.json
+
+# Documentation and non-build files
+kubernetes/
+tests/
+README.md
+*.log

@@ -1,4 +1,4 @@
-// PhoneCare AI - Interactive Frontend Controller
+// PhoneCare AI - Friendly & Clean Interactive Frontend Controller
 
 document.addEventListener('DOMContentLoaded', () => {
   // DOM Elements - Page 1
@@ -35,7 +35,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnRestart = document.getElementById('btn-restart');
 
   const progressBarFill = document.getElementById('progress-bar-fill');
-  const pipelineStatus = document.getElementById('pipeline-status');
 
   // Active Session State
   let currentSessionId = null;
@@ -69,14 +68,14 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     } catch (err) {
       console.error('Metadata error:', err);
-      showError('Unable to connect to PhoneCare backend service. Please check that the server is running on port 8080.');
+      showError('Unable to connect to PhoneCare diagnostic service. Please check your network connection.');
     }
   }
 
-  // Dynamic Model dropdown update based on Brand
+  // Dynamic Model dropdown update based on Brand selection
   brandSelect.addEventListener('change', () => {
     const selectedBrand = brandSelect.value;
-    modelSelect.innerHTML = '<option value="" disabled selected>Select phone model...</option>';
+    modelSelect.innerHTML = '<option value="" disabled selected>Select model...</option>';
 
     if (selectedBrand && metadata.brandsWithModels[selectedBrand]) {
       metadata.brandsWithModels[selectedBrand].forEach(model => {
@@ -104,11 +103,11 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     if (!payload.brand || !payload.model || !payload.category || !payload.description) {
-      showError('Please complete all form fields.');
+      showError('Please fill out all fields so we can diagnose accurately.');
       return;
     }
 
-    setButtonLoading(diagnoseBtn, true, 'Formulating Diagnostic Step...');
+    setButtonLoading(diagnoseBtn, true, 'Finding best step...');
 
     try {
       const res = await fetch(`${API_BASE}/diagnose`, {
@@ -125,13 +124,13 @@ document.addEventListener('DOMContentLoaded', () => {
       const data = await res.json();
       currentSessionId = data.sessionId;
 
-      // Update Device Context Chips
+      // Update Device Summary Spec Pill
       summaryBrand.textContent = data.brand;
       summaryModel.textContent = data.model;
       summaryCategory.textContent = data.category;
       summaryDescription.textContent = payload.description;
 
-      // Switch panels
+      // Transition Views
       diagnosisView.classList.add('hidden');
       troubleshootingView.classList.remove('hidden');
       troubleshootingView.classList.add('fade-in');
@@ -179,81 +178,58 @@ document.addEventListener('DOMContentLoaded', () => {
   btnSolved.addEventListener('click', () => submitFeedback('SOLVED'));
   btnNotSolved.addEventListener('click', () => submitFeedback('NOT_SOLVED'));
 
-  // 4. Render Step or Final Resolution (Zero Emojis, Pure SVGs & Dynamic Pipeline)
+  // 4. Render Step or Final Friendly Resolution
   function renderStep(data) {
-    updatePipeline(data.stepNumber, data.status);
+    const totalSteps = 4;
+    const stepNum = Math.min(Math.max(data.stepNumber || 1, 1), totalSteps);
+    const pct = (stepNum / totalSteps) * 100;
+
+    if (progressBarFill) {
+      progressBarFill.style.width = `${pct}%`;
+    }
+
+    if (stepBadge) {
+      stepBadge.textContent = `Step ${stepNum} of ${totalSteps}`;
+    }
 
     if (data.finalStep || data.status === 'SOLVED' || data.status === 'ESCALATED') {
       stepContainer.classList.add('hidden');
       finalCard.classList.remove('hidden');
-      finalCard.className = 'resolution-card'; // reset classes
+      finalCard.className = 'result-card'; // reset classes
 
       if (data.status === 'SOLVED') {
         finalCard.classList.add('state-success');
         finalIcon.innerHTML = `
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+            <polyline points="20 6 9 17 4 12"></polyline>
           </svg>
         `;
-        finalTitle.textContent = data.title || 'Diagnostic Resolved';
-        finalMessage.innerHTML = `<p>${data.finalRecommendation || data.instruction}</p>`;
+        finalTitle.textContent = 'Great! Your problem appears to be resolved.';
+        finalMessage.innerHTML = `<p>${data.finalRecommendation || 'You are all set! Keep your phone software up to date for smooth performance.'}</p>`;
       } else {
         finalCard.classList.add('state-escalated');
         finalIcon.innerHTML = `
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
-            <line x1="12" y1="9" x2="12" y2="13"></line>
-            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
           </svg>
         `;
-        finalTitle.textContent = data.title || 'Escalate to Authorized Support';
+        finalTitle.textContent = 'Authorized Service Recommended';
         finalMessage.innerHTML = `
           <p style="margin-bottom: 8px;"><strong>${data.explanation}</strong></p>
-          <p>${data.finalRecommendation || data.instruction}</p>
+          <p>${data.finalRecommendation || 'We recommend having your device inspected at an official brand authorized service center.'}</p>
         `;
       }
       return;
     }
 
     // Render active step
-    stepBadge.textContent = `Step ${data.stepNumber}`;
-    stepStatus.textContent = `Analysis Phase ${data.stepNumber}`;
     stepTitle.textContent = data.title;
     stepInstruction.textContent = data.instruction;
     stepExplanation.textContent = data.explanation;
-  }
-
-  // Helper: Visual Pipeline Progress Updates
-  function updatePipeline(stepNum, status) {
-    const totalSteps = 4;
-    let clampedStep = Math.min(Math.max(stepNum || 1, 1), totalSteps);
-    let pct = (clampedStep / totalSteps) * 100;
-
-    if (progressBarFill) {
-      progressBarFill.style.width = `${pct}%`;
-    }
-
-    if (pipelineStatus) {
-      if (status === 'SOLVED') {
-        pipelineStatus.textContent = 'Resolved';
-      } else if (status === 'ESCALATED') {
-        pipelineStatus.textContent = 'Escalated';
-      } else {
-        pipelineStatus.textContent = `Phase ${clampedStep} of ${totalSteps}`;
-      }
-    }
-
-    // Update active node styling
-    for (let i = 1; i <= 4; i++) {
-      const node = document.getElementById(`node-${i}`);
-      if (node) {
-        if (i <= clampedStep) {
-          node.classList.add('active');
-        } else {
-          node.classList.remove('active');
-        }
-      }
+    if (stepStatus) {
+      stepStatus.textContent = 'In Progress';
     }
   }
 
@@ -262,7 +238,7 @@ document.addEventListener('DOMContentLoaded', () => {
     currentSessionId = null;
     diagnosisForm.reset();
     modelSelect.disabled = true;
-    modelSelect.innerHTML = '<option value="" disabled selected>Select brand first...</option>';
+    modelSelect.innerHTML = '<option value="" disabled selected>Select model...</option>';
     troubleshootingView.classList.add('hidden');
     diagnosisView.classList.remove('hidden');
     diagnosisView.classList.add('fade-in');
@@ -294,6 +270,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Load initial metadata on page ready
+  // Initial load
   loadMetadata();
 });
