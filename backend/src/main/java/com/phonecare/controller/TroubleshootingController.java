@@ -5,6 +5,7 @@ import com.phonecare.model.MetadataResponse;
 import com.phonecare.model.SessionState;
 import com.phonecare.model.TroubleshootResponse;
 import com.phonecare.model.TroubleshootStepRequest;
+import com.phonecare.service.AiAgentService;
 import com.phonecare.service.SessionService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -18,9 +19,11 @@ import java.util.*;
 public class TroubleshootingController {
 
     private final SessionService sessionService;
+    private final AiAgentService aiAgentService;
 
-    public TroubleshootingController(SessionService sessionService) {
+    public TroubleshootingController(SessionService sessionService, AiAgentService aiAgentService) {
         this.sessionService = sessionService;
+        this.aiAgentService = aiAgentService;
     }
 
     @GetMapping("/metadata")
@@ -49,22 +52,7 @@ public class TroubleshootingController {
     @PostMapping("/diagnose")
     public ResponseEntity<TroubleshootResponse> diagnose(@Valid @RequestBody DiagnosisRequest request) {
         SessionState session = sessionService.createSession(request);
-
-        // Initial diagnostic step
-        TroubleshootResponse response = new TroubleshootResponse(
-                session.getSessionId(),
-                request.getBrand(),
-                request.getModel(),
-                request.getCategory(),
-                1,
-                "Check Background Usage and Power Consumers",
-                "Go to Settings → Battery → Background usage limits. Inspect apps actively running in the background and put unused high-drain apps to sleep.",
-                "High power consumption in " + request.getModel() + " is frequently caused by unoptimized background apps constantly running CPU wake locks.",
-                false,
-                "IN_PROGRESS",
-                null
-        );
-
+        TroubleshootResponse response = aiAgentService.generateStep(session, null);
         return ResponseEntity.ok(response);
     }
 
@@ -72,61 +60,9 @@ public class TroubleshootingController {
     public ResponseEntity<TroubleshootResponse> troubleshoot(@Valid @RequestBody TroubleshootStepRequest request) {
         SessionState session = sessionService.getSession(request.getSessionId());
 
-        if ("SOLVED".equalsIgnoreCase(request.getFeedback())) {
-            sessionService.recordStepResult(request.getSessionId(), "Step " + session.getCurrentStepNumber(), "SOLVED");
-            TroubleshootResponse response = new TroubleshootResponse(
-                    session.getSessionId(),
-                    session.getBrand(),
-                    session.getModel(),
-                    session.getCategory(),
-                    session.getCurrentStepNumber(),
-                    "Problem Successfully Resolved!",
-                    "Your device settings have resolved the issue.",
-                    "The troubleshooting procedure was successful.",
-                    true,
-                    "SOLVED",
-                    "Issue resolved! Maintain your current settings and keep system software up to date."
-            );
-            return ResponseEntity.ok(response);
-        }
+        sessionService.recordStepResult(request.getSessionId(), "Step " + session.getCurrentStepNumber(), request.getFeedback());
 
-        // When NOT_SOLVED, advance to next step
-        sessionService.recordStepResult(request.getSessionId(), "Step " + session.getCurrentStepNumber(), "NOT_SOLVED");
-        int nextStep = session.getCurrentStepNumber();
-
-        if (nextStep >= 4) {
-            // Threshold reached: recommend professional brand service
-            TroubleshootResponse response = new TroubleshootResponse(
-                    session.getSessionId(),
-                    session.getBrand(),
-                    session.getModel(),
-                    session.getCategory(),
-                    nextStep,
-                    "Escalate to Authorized Service Center",
-                    "All safe software troubleshooting procedures have been completed without resolving the problem.",
-                    "Persistent symptoms after clearing caches, resetting configurations, and testing safe mode suggest a hardware or component-level fault.",
-                    true,
-                    "ESCALATED",
-                    "We recommend scheduling an appointment at an official " + session.getBrand() + " Authorized Service Center. Do not attempt hardware disassembly."
-            );
-            return ResponseEntity.ok(response);
-        }
-
-        // Return Step 2 or 3
-        TroubleshootResponse response = new TroubleshootResponse(
-                session.getSessionId(),
-                session.getBrand(),
-                session.getModel(),
-                session.getCategory(),
-                nextStep,
-                "Clear System Cache & Reset Problem Subsystem",
-                "Open Settings → General management → Reset → Reset network settings (or clear partition cache from recovery). Then restart the device.",
-                "Stale cache files often cause sync loops and excessive battery/system drain on " + session.getBrand() + " devices.",
-                false,
-                "IN_PROGRESS",
-                null
-        );
-
+        TroubleshootResponse response = aiAgentService.generateStep(session, request.getFeedback());
         return ResponseEntity.ok(response);
     }
 
