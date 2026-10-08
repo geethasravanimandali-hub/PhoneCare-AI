@@ -1,0 +1,35 @@
+# Compiled Java & Maven build artifacts
+target/
+*.class
+*.jar
+*.war
+*.ear
+
+# Operating System specific files (Mac)
+.DS_Store
+._*
+.Spotlight-V100
+.Trashes
+
+# IDE / Editor configuration
+.idea/
+*.iml
+.vscode/
+.settings/
+.classpath
+.project
+
+# Secrets, Environment files, and API Keys (NEVER COMMIT)
+.env
+.env.*
+application-local.properties
+*secret*
+*key*.json
+
+# Logs & Crash files
+*.log
+logs/
+
+# Selenium test outputs
+test-output/
+screenshots/
