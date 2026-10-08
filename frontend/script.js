@@ -34,11 +34,14 @@ document.addEventListener('DOMContentLoaded', () => {
   const finalMessage = document.getElementById('final-message');
   const btnRestart = document.getElementById('btn-restart');
 
+  const progressBarFill = document.getElementById('progress-bar-fill');
+  const pipelineStatus = document.getElementById('pipeline-status');
+
   // Active Session State
   let currentSessionId = null;
   let metadata = { brandsWithModels: {}, categories: [] };
 
-  // Base API URL (relative path works for both direct & proxied deployments)
+  // Base API URL
   const API_BASE = '/api';
 
   // 1. Initialize Metadata Dropdowns
@@ -70,7 +73,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Brand selection triggers dynamic Model dropdown update
+  // Dynamic Model dropdown update based on Brand
   brandSelect.addEventListener('change', () => {
     const selectedBrand = brandSelect.value;
     modelSelect.innerHTML = '<option value="" disabled selected>Select phone model...</option>';
@@ -105,7 +108,7 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    setButtonLoading(diagnoseBtn, true, 'Analyzing Problem...');
+    setButtonLoading(diagnoseBtn, true, 'Formulating Diagnostic Step...');
 
     try {
       const res = await fetch(`${API_BASE}/diagnose`, {
@@ -122,15 +125,16 @@ document.addEventListener('DOMContentLoaded', () => {
       const data = await res.json();
       currentSessionId = data.sessionId;
 
-      // Update Device Summary Banner
+      // Update Device Context Chips
       summaryBrand.textContent = data.brand;
       summaryModel.textContent = data.model;
       summaryCategory.textContent = data.category;
       summaryDescription.textContent = payload.description;
 
-      // Switch views
+      // Switch panels
       diagnosisView.classList.add('hidden');
       troubleshootingView.classList.remove('hidden');
+      troubleshootingView.classList.add('fade-in');
       finalCard.classList.add('hidden');
       stepContainer.classList.remove('hidden');
 
@@ -175,30 +179,82 @@ document.addEventListener('DOMContentLoaded', () => {
   btnSolved.addEventListener('click', () => submitFeedback('SOLVED'));
   btnNotSolved.addEventListener('click', () => submitFeedback('NOT_SOLVED'));
 
-  // 4. Render Step or Final Conclusion
+  // 4. Render Step or Final Resolution (Zero Emojis, Pure SVGs & Dynamic Pipeline)
   function renderStep(data) {
+    updatePipeline(data.stepNumber, data.status);
+
     if (data.finalStep || data.status === 'SOLVED' || data.status === 'ESCALATED') {
       stepContainer.classList.add('hidden');
       finalCard.classList.remove('hidden');
+      finalCard.className = 'resolution-card'; // reset classes
 
       if (data.status === 'SOLVED') {
-        finalIcon.textContent = '✅';
-        finalTitle.textContent = data.title || 'Issue Resolved!';
-        finalMessage.textContent = data.finalRecommendation || data.instruction;
+        finalCard.classList.add('state-success');
+        finalIcon.innerHTML = `
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+          </svg>
+        `;
+        finalTitle.textContent = data.title || 'Diagnostic Resolved';
+        finalMessage.innerHTML = `<p>${data.finalRecommendation || data.instruction}</p>`;
       } else {
-        finalIcon.textContent = '🛡️';
-        finalTitle.textContent = data.title || 'Official Service Recommended';
-        finalMessage.innerHTML = `<strong>${data.explanation}</strong><br><br>${data.finalRecommendation || data.instruction}`;
+        finalCard.classList.add('state-escalated');
+        finalIcon.innerHTML = `
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+            <line x1="12" y1="9" x2="12" y2="13"></line>
+            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+          </svg>
+        `;
+        finalTitle.textContent = data.title || 'Escalate to Authorized Support';
+        finalMessage.innerHTML = `
+          <p style="margin-bottom: 8px;"><strong>${data.explanation}</strong></p>
+          <p>${data.finalRecommendation || data.instruction}</p>
+        `;
       }
       return;
     }
 
     // Render active step
     stepBadge.textContent = `Step ${data.stepNumber}`;
-    stepStatus.textContent = `Diagnostic Active`;
+    stepStatus.textContent = `Analysis Phase ${data.stepNumber}`;
     stepTitle.textContent = data.title;
     stepInstruction.textContent = data.instruction;
     stepExplanation.textContent = data.explanation;
+  }
+
+  // Helper: Visual Pipeline Progress Updates
+  function updatePipeline(stepNum, status) {
+    const totalSteps = 4;
+    let clampedStep = Math.min(Math.max(stepNum || 1, 1), totalSteps);
+    let pct = (clampedStep / totalSteps) * 100;
+
+    if (progressBarFill) {
+      progressBarFill.style.width = `${pct}%`;
+    }
+
+    if (pipelineStatus) {
+      if (status === 'SOLVED') {
+        pipelineStatus.textContent = 'Resolved';
+      } else if (status === 'ESCALATED') {
+        pipelineStatus.textContent = 'Escalated';
+      } else {
+        pipelineStatus.textContent = `Phase ${clampedStep} of ${totalSteps}`;
+      }
+    }
+
+    // Update active node styling
+    for (let i = 1; i <= 4; i++) {
+      const node = document.getElementById(`node-${i}`);
+      if (node) {
+        if (i <= clampedStep) {
+          node.classList.add('active');
+        } else {
+          node.classList.remove('active');
+        }
+      }
+    }
   }
 
   // 5. Restart / Reset
@@ -206,27 +262,38 @@ document.addEventListener('DOMContentLoaded', () => {
     currentSessionId = null;
     diagnosisForm.reset();
     modelSelect.disabled = true;
+    modelSelect.innerHTML = '<option value="" disabled selected>Select brand first...</option>';
     troubleshootingView.classList.add('hidden');
     diagnosisView.classList.remove('hidden');
+    diagnosisView.classList.add('fade-in');
   });
 
   // Helpers
   function showError(msg) {
-    formError.textContent = msg;
+    const alertText = formError.querySelector('.alert-text');
+    if (alertText) {
+      alertText.textContent = msg;
+    } else {
+      formError.textContent = msg;
+    }
     formError.classList.remove('hidden');
   }
 
   function hideError() {
     formError.classList.add('hidden');
-    formError.textContent = '';
   }
 
   function setButtonLoading(btn, isLoading, text) {
     btn.disabled = isLoading;
     const btnText = btn.querySelector('.btn-text');
+    const spinner = btn.querySelector('.spinner');
     if (btnText) btnText.textContent = text;
+    if (spinner) {
+      if (isLoading) spinner.classList.remove('hidden');
+      else spinner.classList.add('hidden');
+    }
   }
 
-  // Load metadata on page load
+  // Load initial metadata on page ready
   loadMetadata();
 });
