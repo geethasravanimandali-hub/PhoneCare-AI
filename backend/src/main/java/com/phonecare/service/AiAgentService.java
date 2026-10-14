@@ -2,6 +2,7 @@ package com.phonecare.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.phonecare.model.MlPredictionResult;
 import com.phonecare.model.SessionState;
 import com.phonecare.model.TroubleshootResponse;
 import com.phonecare.model.TroubleshootingAttempt;
@@ -23,6 +24,7 @@ public class AiAgentService {
     private static final Logger logger = LoggerFactory.getLogger(AiAgentService.class);
 
     private final KnowledgeBaseService kbService;
+    private final DiagnosticMlService mlService;
     private final RestTemplate restTemplate = new RestTemplate();
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -32,8 +34,9 @@ public class AiAgentService {
     @Value("${ai.model:gemini-1.5-flash}")
     private String modelName;
 
-    public AiAgentService(KnowledgeBaseService kbService) {
+    public AiAgentService(KnowledgeBaseService kbService, DiagnosticMlService mlService) {
         this.kbService = kbService;
+        this.mlService = mlService;
     }
 
     public TroubleshootResponse generateStep(SessionState session, String feedback) {
@@ -108,9 +111,37 @@ public class AiAgentService {
             return response;
         }
 
-        // Rule 4: Adaptive Diagnostic Disambiguation (Ask follow-up questions when symptoms are underspecified)
-        if (stepNumber == 1 && session.getCompletedSteps().isEmpty() && needsClarification(session)) {
-            return generateAdaptiveClarificationQuestion(session);
+        // Rule 4: Adaptive Diagnostic Disambiguation (Ask follow-up questions when symptoms are underspecified or ML is uncertain)
+        boolean clarifyNeeded = needsClarification(session);
+        if (stepNumber == 1 && session.getCompletedSteps().isEmpty()) {
+            if (!clarifyNeeded && mlService != null) {
+                try {
+                    MlPredictionResult mlResult = mlService.predict(
+                            session.getDescription(),
+                            session.getBrand(),
+                            session.getModel(),
+                            session.getAndroidVersion(),
+                            ""
+                    );
+                    if (mlResult != null && "SUCCESS".equals(mlResult.getStatus())) {
+                        if (mlResult.isUncertain()) {
+                            clarifyNeeded = true;
+                        } else {
+                            session.setSuspectedCause("ML Diagnostic: " + mlResult.getPredictedCategory() +
+                                    " (" + mlResult.getModelType() + ", confidence: " +
+                                    Math.round(mlResult.getConfidenceScore() * 100) + "%)");
+                            session.setRecommendationSource("DIAGNOSTIC_ML_MODEL");
+                            session.setConfidence(mlResult.getConfidenceScore());
+                        }
+                    }
+                } catch (Exception e) {
+                    logger.debug("ML prediction in AiAgentService skipped: {}", e.getMessage());
+                }
+            }
+
+            if (clarifyNeeded) {
+                return generateAdaptiveClarificationQuestion(session);
+            }
         }
 
         // Rule 5: Try LLM Call if API Key is Present
@@ -274,12 +305,18 @@ public class AiAgentService {
         String instruction = selectedStep.path("action").asText() + " (On " + session.getBrand() + ": " + brandPath + ")";
         String explanation = selectedStep.path("rationale").asText("Standard configuration audit for " + session.getCategory() + ".");
 
-        String suspectedCause = deriveSuspectedCause(session.getCategory(), title);
+        String suspectedCause = session.getSuspectedCause() != null ? session.getSuspectedCause() : deriveSuspectedCause(session.getCategory(), title);
         session.setSuspectedCause(suspectedCause);
-        session.setRecommendationSource("GROUNDED_KNOWLEDGE_BASE");
-        session.setConfidence(0.90);
 
-        String evidenceSource = "Grounded Knowledge Base [OEM " + session.getBrand() + " Technical Documentation & AOSP System Guidelines]";
+        String recommendationSource = session.getRecommendationSource() != null ? session.getRecommendationSource() : "GROUNDED_KNOWLEDGE_BASE";
+        session.setRecommendationSource(recommendationSource);
+
+        double confidence = session.getConfidence() > 0 ? session.getConfidence() : 0.90;
+        session.setConfidence(confidence);
+
+        String evidenceSource = "DIAGNOSTIC_ML_MODEL".equals(recommendationSource) ?
+                "PhoneCare-AI ML Model [Trained Scikit-Learn Classifier & Grounded Guidelines]" :
+                "Grounded Knowledge Base [OEM " + session.getBrand() + " Technical Documentation & AOSP System Guidelines]";
 
         TroubleshootResponse response = new TroubleshootResponse(
                 session.getSessionId(),
@@ -294,7 +331,7 @@ public class AiAgentService {
                 "IN_PROGRESS",
                 null,
                 suspectedCause,
-                0.90,
+                confidence,
                 evidenceSource,
                 "VERIFIED"
         );

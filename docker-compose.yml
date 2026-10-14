@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  # PhoneCare-AI Spring Boot Backend & Web UI
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: phonecare-backend
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=8080
+      - ML_ENABLED=true
+      - ML_SERVICE_URL=http://ml-service:5001/predict
+      - AI_API_KEY=${AI_API_KEY:-}
+    depends_on:
+      ml-service:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # PhoneCare-AI Python Diagnostic ML Microservice
+  ml-service:
+    build:
+      context: .
+      dockerfile: ml/Dockerfile
+    container_name: phonecare-ml-service
+    ports:
+      - "5001:5001"
+    environment:
+      - PORT=5001
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5001/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    restart: unless-stopped

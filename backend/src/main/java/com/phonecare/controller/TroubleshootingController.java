@@ -25,13 +25,16 @@ public class TroubleshootingController {
     private final SessionService sessionService;
     private final AiAgentService aiAgentService;
     private final ProblemValidationService validationService;
+    private final com.phonecare.service.DiagnosticMlService mlService;
 
     public TroubleshootingController(SessionService sessionService,
                                      AiAgentService aiAgentService,
-                                     ProblemValidationService validationService) {
+                                     ProblemValidationService validationService,
+                                     com.phonecare.service.DiagnosticMlService mlService) {
         this.sessionService = sessionService;
         this.aiAgentService = aiAgentService;
         this.validationService = validationService;
+        this.mlService = mlService;
     }
 
     @GetMapping("/metadata")
@@ -116,5 +119,26 @@ public class TroubleshootingController {
     @GetMapping("/sessions")
     public ResponseEntity<Collection<SessionState>> getAllSessions() {
         return ResponseEntity.ok(sessionService.getAllSessions());
+    }
+
+    @PostMapping("/ml/predict")
+    public ResponseEntity<com.phonecare.model.MlPredictionResult> predictWithMl(@Valid @RequestBody DiagnosisRequest request) {
+        com.phonecare.model.MlPredictionResult result = mlService.predict(
+                request.getDescription(),
+                request.getBrand(),
+                request.getModel(),
+                request.getAndroidVersion(),
+                ""
+        );
+        return ResponseEntity.ok(result);
+    }
+
+    @GetMapping("/ml/status")
+    public ResponseEntity<Map<String, Object>> getMlStatus() {
+        Map<String, Object> status = new LinkedHashMap<>();
+        status.put("status", "ACTIVE");
+        status.put("portable_model_loaded", mlService.isPortableModelLoaded());
+        status.put("resolved_python", mlService.getResolvedPythonPath());
+        return ResponseEntity.ok(status);
     }
 }

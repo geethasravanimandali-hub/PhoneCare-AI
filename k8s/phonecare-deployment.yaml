@@ -1,0 +1,139 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: phonecare-config
+  labels:
+    app: phonecare
+data:
+  PORT: "8080"
+  ML_ENABLED: "true"
+  ML_SERVICE_URL: "http://phonecare-ml:5001/predict"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: phonecare-ml
+  labels:
+    app: phonecare
+    component: ml-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: phonecare
+      component: ml-service
+  template:
+    metadata:
+      labels:
+        app: phonecare
+        component: ml-service
+    spec:
+      containers:
+        - name: ml-service
+          image: phonecare-ml-service:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 5001
+          env:
+            - name: PORT
+              value: "5001"
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 5001
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 5001
+            initialDelaySeconds: 10
+            periodSeconds: 15
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: phonecare-ml
+  labels:
+    app: phonecare
+    component: ml-service
+spec:
+  type: ClusterIP
+  ports:
+    - port: 5001
+      targetPort: 5001
+  selector:
+    app: phonecare
+    component: ml-service
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: phonecare-backend
+  labels:
+    app: phonecare
+    component: backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: phonecare
+      component: backend
+  template:
+    metadata:
+      labels:
+        app: phonecare
+        component: backend
+    spec:
+      containers:
+        - name: backend
+          image: phonecare-backend:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: phonecare-config
+          resources:
+            requests:
+              cpu: "200m"
+              memory: "256Mi"
+            limits:
+              cpu: "1000m"
+              memory: "768Mi"
+          readinessProbe:
+            httpGet:
+              path: /api/metadata
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /api/metadata
+              port: 8080
+            initialDelaySeconds: 20
+            periodSeconds: 15
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: phonecare-backend
+  labels:
+    app: phonecare
+    component: backend
+spec:
+  type: NodePort
+  ports:
+    - port: 8080
+      targetPort: 8080
+      nodePort: 30080
+  selector:
+    app: phonecare
+    component: backend

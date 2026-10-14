@@ -12,6 +12,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import com.phonecare.model.MlPredictionResult;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.*;
@@ -23,6 +24,7 @@ public class ProblemValidationService {
     private static final Logger logger = LoggerFactory.getLogger(ProblemValidationService.class);
 
     private final KnowledgeBaseService kbService;
+    private final DiagnosticMlService mlService;
     private final RestTemplate restTemplate = new RestTemplate();
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -78,8 +80,9 @@ public class ProblemValidationService {
         ));
     }
 
-    public ProblemValidationService(KnowledgeBaseService kbService) {
+    public ProblemValidationService(KnowledgeBaseService kbService, DiagnosticMlService mlService) {
         this.kbService = kbService;
+        this.mlService = mlService;
     }
 
     public ProblemValidationResponse validate(DiagnosisRequest request) {
@@ -98,20 +101,46 @@ public class ProblemValidationService {
             );
         }
 
-        // 2. If Live AI is configured, try classification with graceful fallback
-        if (apiKey != null && !apiKey.trim().isEmpty()) {
+        // 2. Check for multiple distinct problems explicitly mentioned
+        List<String> detected = detectCategories(description);
+        if (detected.size() > 1) {
+            String catList = String.join(", ", detected);
+            return new ProblemValidationResponse(
+                    "MULTIPLE_PROBLEMS",
+                    selectedCategory,
+                    detected,
+                    detected.get(0),
+                    "We noticed multiple issues mentioned in your description (" + catList + "). Which problem would you like to troubleshoot first?",
+                    false
+            );
+        }
+
+        // 3. Evaluate Rule-Based Validation (Evaluates MATCH, MISMATCH, MULTIPLE_PROBLEMS, UNCLEAR)
+        ProblemValidationResponse ruleResponse = evaluateRuleBasedValidation(selectedCategory, description);
+
+        // 4. Enrich or complement with ML Model Prediction where applicable
+        if (mlService != null && "UNCLEAR".equals(ruleResponse.getOutcome())) {
             try {
-                ProblemValidationResponse aiResponse = callGeminiValidation(request);
-                if (aiResponse != null) {
-                    return aiResponse;
+                MlPredictionResult mlRes = mlService.predict(description, request.getBrand(), request.getModel(), request.getAndroidVersion(), "");
+                if (mlRes != null && "SUCCESS".equals(mlRes.getStatus()) && !mlRes.isUncertain() && "HIGH".equals(mlRes.getConfidenceLevel())) {
+                    String predicted = mlRes.getPredictedCategory();
+                    if (predicted != null && predicted.equalsIgnoreCase(selectedCategory)) {
+                        return new ProblemValidationResponse(
+                                "MATCH",
+                                selectedCategory,
+                                List.of(selectedCategory),
+                                selectedCategory,
+                                "Selected category matches your problem description (validated by PhoneCare ML model).",
+                                false
+                        );
+                    }
                 }
             } catch (Exception e) {
-                logger.warn("Live AI problem validation failed: {}. Falling back to rule-based keyword validation.", e.getMessage());
+                logger.debug("ML validation enrichment skipped: {}", e.getMessage());
             }
         }
 
-        // 3. Deterministic Rule-Based Symptom Detection (Robust Fallback)
-        return evaluateRuleBasedValidation(selectedCategory, description);
+        return ruleResponse;
     }
 
     public ProblemValidationResponse evaluateRuleBasedValidation(String selectedCategory, String description) {
