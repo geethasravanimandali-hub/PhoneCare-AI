@@ -69,6 +69,18 @@ public class KnowledgeBaseService {
         return null;
     }
 
+    public List<JsonNode> getAllSteps(String categoryName) {
+        JsonNode catNode = getCategoryNode(categoryName);
+        if (catNode != null && catNode.has("safeSteps")) {
+            List<JsonNode> steps = new ArrayList<>();
+            for (JsonNode step : catNode.path("safeSteps")) {
+                steps.add(step);
+            }
+            return steps;
+        }
+        return Collections.emptyList();
+    }
+
     public boolean hasSafetyHazard(String categoryName, String userDescription) {
         if (userDescription == null) return false;
         String lowerDesc = userDescription.toLowerCase();

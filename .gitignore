@@ -33,3 +33,7 @@ logs/
 # Selenium test outputs
 test-output/
 screenshots/
+
+# Runtime session files
+data/sessions/
+backend/data/sessions/

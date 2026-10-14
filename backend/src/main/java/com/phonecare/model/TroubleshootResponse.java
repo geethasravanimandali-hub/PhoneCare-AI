@@ -1,5 +1,8 @@
 package com.phonecare.model;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class TroubleshootResponse {
 
     private String sessionId;
@@ -11,10 +14,21 @@ public class TroubleshootResponse {
     private String instruction;
     private String explanation;
     private boolean isFinalStep;
-    private String status; // "IN_PROGRESS", "SOLVED", "ESCALATED"
+    private String status; // "IN_PROGRESS", "SOLVED", "ESCALATED", "NEEDS_CLARIFICATION"
     private String finalRecommendation;
 
+    // Outcome-Based & Adaptive Diagnostics Enhancements
+    private String suspectedCause;
+    private Double confidence;
+    private String evidenceSource;
+    private String evidenceType; // "VERIFIED", "INFERRED", "UNKNOWN"
+    private String followUpQuestion;
+    private List<String> followUpOptions;
+    private List<TroubleshootingAttempt> attemptHistory;
+
     public TroubleshootResponse() {
+        this.followUpOptions = new ArrayList<>();
+        this.attemptHistory = new ArrayList<>();
     }
 
     public TroubleshootResponse(String sessionId, String brand, String model, String category,
@@ -31,6 +45,23 @@ public class TroubleshootResponse {
         this.isFinalStep = isFinalStep;
         this.status = status;
         this.finalRecommendation = finalRecommendation;
+        this.followUpOptions = new ArrayList<>();
+        this.attemptHistory = new ArrayList<>();
+        this.evidenceType = "VERIFIED";
+        this.confidence = 0.85;
+    }
+
+    public TroubleshootResponse(String sessionId, String brand, String model, String category,
+                                int stepNumber, String title, String instruction, String explanation,
+                                boolean isFinalStep, String status, String finalRecommendation,
+                                String suspectedCause, Double confidence, String evidenceSource,
+                                String evidenceType) {
+        this(sessionId, brand, model, category, stepNumber, title, instruction, explanation,
+                isFinalStep, status, finalRecommendation);
+        this.suspectedCause = suspectedCause;
+        this.confidence = confidence;
+        this.evidenceSource = evidenceSource;
+        this.evidenceType = evidenceType;
     }
 
     public String getSessionId() {
@@ -119,5 +150,61 @@ public class TroubleshootResponse {
 
     public void setFinalRecommendation(String finalRecommendation) {
         this.finalRecommendation = finalRecommendation;
+    }
+
+    public String getSuspectedCause() {
+        return suspectedCause;
+    }
+
+    public void setSuspectedCause(String suspectedCause) {
+        this.suspectedCause = suspectedCause;
+    }
+
+    public Double getConfidence() {
+        return confidence;
+    }
+
+    public void setConfidence(Double confidence) {
+        this.confidence = confidence;
+    }
+
+    public String getEvidenceSource() {
+        return evidenceSource;
+    }
+
+    public void setEvidenceSource(String evidenceSource) {
+        this.evidenceSource = evidenceSource;
+    }
+
+    public String getEvidenceType() {
+        return evidenceType;
+    }
+
+    public void setEvidenceType(String evidenceType) {
+        this.evidenceType = evidenceType;
+    }
+
+    public String getFollowUpQuestion() {
+        return followUpQuestion;
+    }
+
+    public void setFollowUpQuestion(String followUpQuestion) {
+        this.followUpQuestion = followUpQuestion;
+    }
+
+    public List<String> getFollowUpOptions() {
+        return followUpOptions;
+    }
+
+    public void setFollowUpOptions(List<String> followUpOptions) {
+        this.followUpOptions = followUpOptions;
+    }
+
+    public List<TroubleshootingAttempt> getAttemptHistory() {
+        return attemptHistory;
+    }
+
+    public void setAttemptHistory(List<TroubleshootingAttempt> attemptHistory) {
+        this.attemptHistory = attemptHistory;
     }
 }

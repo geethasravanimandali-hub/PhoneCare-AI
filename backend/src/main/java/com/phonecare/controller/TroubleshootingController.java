@@ -2,10 +2,14 @@ package com.phonecare.controller;
 
 import com.phonecare.model.DiagnosisRequest;
 import com.phonecare.model.MetadataResponse;
+import com.phonecare.model.ProblemValidationResponse;
 import com.phonecare.model.SessionState;
+import com.phonecare.model.TroubleshootOutcome;
 import com.phonecare.model.TroubleshootResponse;
 import com.phonecare.model.TroubleshootStepRequest;
+import com.phonecare.model.TroubleshootingAttempt;
 import com.phonecare.service.AiAgentService;
+import com.phonecare.service.ProblemValidationService;
 import com.phonecare.service.SessionService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -20,10 +24,14 @@ public class TroubleshootingController {
 
     private final SessionService sessionService;
     private final AiAgentService aiAgentService;
+    private final ProblemValidationService validationService;
 
-    public TroubleshootingController(SessionService sessionService, AiAgentService aiAgentService) {
+    public TroubleshootingController(SessionService sessionService,
+                                     AiAgentService aiAgentService,
+                                     ProblemValidationService validationService) {
         this.sessionService = sessionService;
         this.aiAgentService = aiAgentService;
+        this.validationService = validationService;
     }
 
     @GetMapping("/metadata")
@@ -49,6 +57,11 @@ public class TroubleshootingController {
         return ResponseEntity.ok(new MetadataResponse(brandsWithModels, categories));
     }
 
+    @PostMapping({"/validate-problem", "/validate"})
+    public ResponseEntity<ProblemValidationResponse> validateProblem(@Valid @RequestBody DiagnosisRequest request) {
+        return ResponseEntity.ok(validationService.validate(request));
+    }
+
     @PostMapping("/diagnose")
     public ResponseEntity<TroubleshootResponse> diagnose(@Valid @RequestBody DiagnosisRequest request) {
         SessionState session = sessionService.createSession(request);
@@ -60,14 +73,48 @@ public class TroubleshootingController {
     public ResponseEntity<TroubleshootResponse> troubleshoot(@Valid @RequestBody TroubleshootStepRequest request) {
         SessionState session = sessionService.getSession(request.getSessionId());
 
-        sessionService.recordStepResult(request.getSessionId(), "Step " + session.getCurrentStepNumber(), request.getFeedback());
+        // If the request contains an answer to a diagnostic clarification question, store observation
+        if (request.getFollowUpAnswer() != null && !request.getFollowUpAnswer().isBlank()) {
+            sessionService.recordObservation(request.getSessionId(), "user_observation", request.getFollowUpAnswer().trim());
+        }
 
-        TroubleshootResponse response = aiAgentService.generateStep(session, request.getFeedback());
+        String outcome = request.getOutcome();
+        boolean attempted = request.isAttempted();
+        int stepNumber = request.getStepNumber() != null ? request.getStepNumber() : session.getCurrentStepNumber();
+        String stepTitle = "Step " + stepNumber;
+        if (session.getLatestAttempt() != null && stepNumber == session.getLatestAttempt().getStepNumber()) {
+            stepTitle = session.getLatestAttempt().getStepTitle();
+        }
+
+        sessionService.recordStepAttempt(
+                request.getSessionId(),
+                stepNumber,
+                stepTitle,
+                "Executed diagnostic step",
+                session.getSuspectedCause() != null ? session.getSuspectedCause() : "Standard configuration diagnosis",
+                attempted,
+                TroubleshootOutcome.fromString(outcome),
+                request.getUserObservation(),
+                session.getRecommendationSource() != null ? session.getRecommendationSource() : "GROUNDED_KNOWLEDGE_BASE",
+                session.getConfidence() > 0 ? session.getConfidence() : 0.85
+        );
+
+        TroubleshootResponse response = aiAgentService.generateStep(session, outcome);
         return ResponseEntity.ok(response);
     }
 
     @GetMapping("/session/{sessionId}")
     public ResponseEntity<SessionState> getSession(@PathVariable String sessionId) {
         return ResponseEntity.ok(sessionService.getSession(sessionId));
+    }
+
+    @GetMapping("/session/{sessionId}/history")
+    public ResponseEntity<List<TroubleshootingAttempt>> getSessionHistory(@PathVariable String sessionId) {
+        return ResponseEntity.ok(sessionService.getSession(sessionId).getAttempts());
+    }
+
+    @GetMapping("/sessions")
+    public ResponseEntity<Collection<SessionState>> getAllSessions() {
+        return ResponseEntity.ok(sessionService.getAllSessions());
     }
 }
