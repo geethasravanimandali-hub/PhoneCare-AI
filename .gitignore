@@ -37,3 +37,12 @@ screenshots/
 # Runtime session files
 data/sessions/
 backend/data/sessions/
+
+# Python Virtual Environments & Bytecode
+ml/.venv/
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
